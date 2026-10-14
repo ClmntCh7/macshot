@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Move and resize the webcam during recording, with optional corner snapping. Studio replays recorded placement changes. Thanks @ivanilsonsousa. (#429)
+- Record GIF menu item and configurable hotkey, plus Save + copy to clipboard when a recording stops. Thanks @mdtoupin. (#423)
+
+### Fixed
+
+- Exported audio plays in FFmpeg-based players and services by keeping its sample-rate clock. Thanks @Redth. (#449)
+- Small silence buffers advance a silent system track when it holds up microphone encoding. Queued audio still drains at stop, and persistent overload remains an explicit failure. Based on the investigation in #456.
+- Webcam resizing preserves the initial grab offset and opposite corner. Cancelled GIF requests do not affect later captures, and Save + copy also copies after choosing a destination in the Save dialog.
+
 ## [4.4.0-beta.6] - 2026-10-05
 
 ### Fixed

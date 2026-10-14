@@ -857,3 +857,5 @@
 "Zoom out timeline" = "缩小时间线";
 "macOS" = "macOS";
 "Sway" = "摆动";
+
+"Snap webcam to corners when moved" = "移动时将摄像头吸附到角落";

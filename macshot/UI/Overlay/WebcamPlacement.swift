@@ -99,7 +99,7 @@ enum WebcamPlacement {
             let inner = bounds.insetBy(dx: padding, dy: padding)
             let room = min(direction.dx > 0 ? inner.maxX - anchor.x : anchor.x - inner.minX,
                            direction.dy > 0 ? inner.maxY - anchor.y : anchor.y - inner.minY)
-            let side = min(fittedSize(initialFrame.width + distance - initialDistance, in: bounds),
+            let side = min(fittedSize(initialFrame.width + (distance - initialDistance), in: bounds),
                            max(1, room))
             return NSRect(x: direction.dx > 0 ? anchor.x : anchor.x - side,
                           y: direction.dy > 0 ? anchor.y : anchor.y - side,

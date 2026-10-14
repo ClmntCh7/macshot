@@ -857,3 +857,5 @@
 "Zoom out timeline" = "টাইমলাইন জুম আউট করুন";
 "macOS" = "macOS";
 "Sway" = "দোলন";
+
+"Snap webcam to corners when moved" = "সরানোর সময় ওয়েবক্যামকে কোণায় আটকে দিন";

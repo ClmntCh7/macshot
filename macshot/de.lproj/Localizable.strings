@@ -857,3 +857,5 @@
 "Zoom out timeline" = "Zeitleiste verkleinern";
 "macOS" = "macOS";
 "Sway" = "Schwingen";
+
+"Snap webcam to corners when moved" = "Webcam beim Verschieben an Ecken einrasten lassen";

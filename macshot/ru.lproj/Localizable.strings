@@ -855,3 +855,5 @@
 "Zoom out timeline" = "Уменьшить шкалу времени";
 "macOS" = "macOS";
 "Sway" = "Покачивание";
+
+"Snap webcam to corners when moved" = "Привязывать веб-камеру к углам при перемещении";

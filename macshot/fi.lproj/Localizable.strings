@@ -855,3 +855,5 @@
 "Zoom out timeline" = "Loitonna aikajanaa";
 "macOS" = "macOS";
 "Sway" = "Heilunta";
+
+"Snap webcam to corners when moved" = "Kohdista verkkokamera kulmiin siirrettäessä";

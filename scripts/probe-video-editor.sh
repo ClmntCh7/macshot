@@ -40,6 +40,7 @@ fi
 sources=(
   macshot/Capture/AudioTrackMixer.swift
   macshot/Capture/CancellableRenderQueue.swift
+  macshot/Capture/CameraPlacementTrack.swift
   macshot/Capture/CursorMotion.swift
   macshot/Capture/CursorTelemetry.swift
   macshot/Capture/EffectsVideoCompositor.swift

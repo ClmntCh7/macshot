@@ -857,3 +857,5 @@
 "Zoom out timeline" = "Reduzir linha do tempo";
 "macOS" = "macOS";
 "Sway" = "Balanço";
+
+"Snap webcam to corners when moved" = "Encaixar a webcam nos cantos ao mover";

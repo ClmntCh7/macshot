@@ -855,3 +855,5 @@
 "Zoom out timeline" = "タイムラインを縮小";
 "macOS" = "macOS";
 "Sway" = "揺れ";
+
+"Snap webcam to corners when moved" = "移動時にウェブカメラを四隅にスナップ";

@@ -857,3 +857,5 @@
 "Zoom out timeline" = "تصغير المخطط الزمني";
 "macOS" = "macOS";
 "Sway" = "تمايل";
+
+"Snap webcam to corners when moved" = "محاذاة كاميرا الويب إلى الزوايا عند تحريكها";

@@ -855,3 +855,5 @@
 "Zoom out timeline" = "Oddálit časovou osu";
 "macOS" = "macOS";
 "Sway" = "Kývání";
+
+"Snap webcam to corners when moved" = "Přichytávat webkameru k rohům při přesouvání";

@@ -855,3 +855,5 @@
 "Zoom out timeline" = "Zoom ud på tidslinjen";
 "macOS" = "macOS";
 "Sway" = "Svaj";
+
+"Snap webcam to corners when moved" = "Fastgør webkameraet til hjørnerne, når det flyttes";

@@ -857,3 +857,5 @@
 "Zoom out timeline" = "Zaman çizelgesini uzaklaştır";
 "macOS" = "macOS";
 "Sway" = "Salınım";
+
+"Snap webcam to corners when moved" = "Taşırken web kamerasını köşelere yasla";

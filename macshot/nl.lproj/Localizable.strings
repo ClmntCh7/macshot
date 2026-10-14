@@ -857,3 +857,5 @@
 "Zoom out timeline" = "Tijdlijn uitzoomen";
 "macOS" = "macOS";
 "Sway" = "Zwaai";
+
+"Snap webcam to corners when moved" = "Webcam bij verplaatsen aan hoeken vastklikken";

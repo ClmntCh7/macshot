@@ -855,3 +855,5 @@
 "Zoom out timeline" = "Idővonal kicsinyítése";
 "macOS" = "macOS";
 "Sway" = "Billegés";
+
+"Snap webcam to corners when moved" = "Webkamera sarkokhoz igazítása mozgatáskor";
