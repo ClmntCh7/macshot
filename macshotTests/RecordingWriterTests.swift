@@ -623,4 +623,74 @@ final class RecordingWriterTests: XCTestCase {
         XCTAssertLessThan(lastGreen, 40)
         XCTAssertEqual(asset.duration.seconds, 2, accuracy: 0.001)
     }
+    func testSilentSystemAudioDoesNotStarveMicrophoneOrFinalTail() async throws {
+        let (writer, url) = try makeWriter(audio: true)
+        let pixels = try RecordingMediaFixture.pixels()
+        for tick in 0..<3000 { // 60 seconds of mic, no system buffers at all.
+            let pts = CMTime(value: Int64(4_800_000 + tick * 960), timescale: 48_000)
+            if tick % 5 == 0 { try await append(writer, time: pts.seconds, buffer: pixels) }
+            let mic = try RecordingMediaFixture.audio(samples: 960, pts: pts, phaseSample: tick * 960)
+            queue.sync { writer.handleMicSample(mic) }
+        }
+        writer.requestStop(atSourceTime: CMTime(value: 160, timescale: 1))
+        try await writer.finish()
+        let asset = AVAsset(url: url)
+        let tracks = asset.tracks(withMediaType: .audio)
+        XCTAssertFalse(tracks.isEmpty)
+        let mic = try XCTUnwrap(tracks.first)
+        XCTAssertEqual(mic.timeRange.duration.seconds, 60, accuracy: 0.03)
+        let reader = try AVAssetReader(asset: asset)
+        let output = AVAssetReaderTrackOutput(track: mic, outputSettings: [AVFormatIDKey: kAudioFormatLinearPCM])
+        reader.add(output)
+        XCTAssertTrue(reader.startReading())
+        var frames = 0
+        while let sample = output.copyNextSampleBuffer() { frames += sample.numSamples }
+        XCTAssertEqual(reader.status, .completed)
+        XCTAssertGreaterThanOrEqual(frames, 60 * 48_000 - 1024, "The final queued mic buffers must be drained")
+    }
+
+    func testSystemAudioCanStartAfterAQuietIntervalWithOrWithoutMicrophone() async throws {
+        for micEnabled in [false, true] {
+            let url = directory.appendingPathComponent("late-system-\(micEnabled).mp4")
+            let writer = try MP4WriterSession.make(queue: queue, url: url, width: 64, height: 64, fps: 30,
+                recordSystemAudio: true, recordMicAudio: micEnabled)
+            let pixels = try RecordingMediaFixture.pixels()
+            for tick in 0..<400 {
+                let pts = CMTime(value: Int64(4_800_000 + tick * 960), timescale: 48_000)
+                if tick % 5 == 0 { try await append(writer, time: pts.seconds, buffer: pixels) }
+                if micEnabled {
+                    let mic = try RecordingMediaFixture.audio(samples: 960, pts: pts, phaseSample: tick * 960)
+                    queue.sync { writer.handleMicSample(mic) }
+                }
+                if tick >= 250 {
+                    let system = try RecordingMediaFixture.planarAudio(frames: 960, pts: pts, firstValue: 100_000)
+                    queue.sync { writer.handleSystemAudioSample(system) }
+                }
+            }
+            writer.requestStop(atSourceTime: CMTime(value: 108, timescale: 1))
+            try await writer.finish()
+            let asset = AVAsset(url: url)
+            let system = try XCTUnwrap(asset.tracks(withMediaType: .audio).last)
+            XCTAssertEqual(system.timeRange.end.seconds, 8, accuracy: 0.03)
+            let reader = try AVAssetReader(asset: asset)
+            reader.timeRange = CMTimeRange(start: CMTime(value: 51, timescale: 10), duration: CMTime(value: 1, timescale: 10))
+            let output = AVAssetReaderTrackOutput(track: system, outputSettings: [AVFormatIDKey: kAudioFormatLinearPCM,
+                AVLinearPCMIsFloatKey: true, AVLinearPCMBitDepthKey: 32, AVLinearPCMIsNonInterleaved: false])
+            reader.add(output)
+            XCTAssertTrue(reader.startReading())
+            var peak: Float = 0
+            while let sample = output.copyNextSampleBuffer(), let block = sample.dataBuffer {
+                let size = CMBlockBufferGetDataLength(block)
+                var values = [Float](repeating: 0, count: size / MemoryLayout<Float>.size)
+                let status = values.withUnsafeMutableBytes {
+                    CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: size, destination: $0.baseAddress!)
+                }
+                XCTAssertEqual(status, noErr)
+                peak = max(peak, values.map { abs($0) }.max() ?? 0)
+            }
+            XCTAssertEqual(reader.status, .completed)
+            XCTAssertGreaterThan(peak, 0.05, "Real system audio must survive its return after silence")
+        }
+    }
+
 }

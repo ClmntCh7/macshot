@@ -47,6 +47,8 @@ final class MP4WriterSession: @unchecked Sendable {
     private var lastMicEnd: CMTime = .invalid
     private var systemAudioFormat: CMAudioFormatDescription?
     private var microphoneFormat: CMAudioFormatDescription?
+    private var silenceFormat: CMAudioFormatDescription?
+    private var systemAudioFinished = false
     private(set) var frameCount: Int64 = 0
     private(set) var droppedVideoFrames: Int64 = 0
     private var pendingAudioSamples = RecordingAudioQueue()
@@ -290,6 +292,7 @@ final class MP4WriterSession: @unchecked Sendable {
                 let empty = isMic ? self.pendingMicSamples.isEmpty : self.pendingAudioSamples.isEmpty
                 guard empty || self.firstError != nil else { return }
                 done = true
+                if !isMic { self.systemAudioFinished = true }
                 input.markAsFinished()
                 finishedInput()
             }
@@ -422,11 +425,15 @@ final class MP4WriterSession: @unchecked Sendable {
             return
         }
         if isMic { microphoneFormat = format } else { systemAudioFormat = format }
-        // Make room first: a sample must not be refused while earlier audio
-        // could still be handed to the encoder.
-        if sessionStarted { drainAudio(isMic: isMic) }
         if sessionStarted {
             if !appendPending(adjusted, isMic: isMic) {
+                // Queue incoming system audio before inferring a silence gap;
+                // otherwise the silence pump could overwrite this real buffer.
+                drainAudio(isMic: isMic)
+                if appendPending(adjusted, isMic: isMic) {
+                    drainAudio(isMic: isMic)
+                    return
+                }
                 // The encoder is not accepting audio (interleaving against a
                 // stalled video track, disk or AAC backpressure). Losing the
                 // oldest queued audio keeps the take; abort only if the
@@ -494,9 +501,25 @@ final class MP4WriterSession: @unchecked Sendable {
     }
 
     private func drainAudio(isMic: Bool) {
+        if isMic { drainAudio(isMic: false) }
         guard sessionStarted, firstError == nil,
+              isMic || !systemAudioFinished,
               let input = isMic ? micAudioInput : audioInput else { return }
+        var silenceBuffers = 0
         while input.isReadyForMoreMediaData {
+            if !isMic, let target = systemSilenceTarget() {
+                // Yield after ten small buffers. The maintenance timer or
+                // next captured sample continues on the next turn.
+                guard silenceBuffers < 10 else { return }
+                if silenceFormat == nil { silenceFormat = RecordingAudioSilence.systemFormat() }
+                guard let format = systemAudioFormat ?? silenceFormat,
+                      let silence = RecordingAudioSilence.buffer(from: systemAudioBoundary, to: target, format: format)
+                else { fail(WriterError.appendFailed); return }
+                guard input.append(silence) else { fail(assetWriter?.error ?? WriterError.appendFailed); return }
+                lastAudioEnd = CMTimeAdd(silence.presentationTimeStamp, silence.duration)
+                silenceBuffers += 1
+                continue // Recheck readiness before appending real audio.
+            }
             let sample = isMic ? pendingMicSamples.removeFirst() : pendingAudioSamples.removeFirst()
             guard let sample = sample else { break }
             let lastEnd = isMic ? lastMicEnd : lastAudioEnd
@@ -508,6 +531,23 @@ final class MP4WriterSession: @unchecked Sendable {
             let end = CMTimeAdd(CMSampleBufferGetPresentationTimeStamp(clipped), CMSampleBufferGetDuration(clipped))
             if isMic { lastMicEnd = end } else { lastAudioEnd = end }
         }
+    }
+
+    private var systemAudioBoundary: CMTime {
+        lastAudioEnd.isNumeric ? CMTimeMaximum(startTime, lastAudioEnd) : startTime
+    }
+
+    /// Only the system track is sparse. Fill it only when a sibling input is
+    /// blocked, with no real system samples waiting. Once finishing, marking
+    /// an empty input finished releases interleaving without manufacturing a
+    /// potentially hours-long silent tail.
+    private func systemSilenceTarget() -> CMTime? {
+        guard sessionStarted, audioInput != nil, let microphone = micAudioInput,
+              !systemAudioFinished, mode == .recording else { return nil }
+        let progress = lastMicEnd
+        let stalled = !microphone.isReadyForMoreMediaData
+        return RecordingAudioSilence.target(boundary: systemAudioBoundary, progress: progress,
+            hasQueuedAudio: !pendingAudioSamples.isEmpty, siblingStalled: stalled)
     }
 
     /// Aligns a queued buffer to the end of the audio already written.
