@@ -1785,7 +1785,7 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
         stack.setCustomSpacing(10, after: stack.arrangedSubviews.last!)
 
         recordingOnStopPopup = NSPopUpButton()
-        recordingOnStopPopup.addItems(withTitles: [L("Open editor"), L("Show in Finder"), L("Copy to clipboard")])
+        recordingOnStopPopup.addItems(withTitles: [L("Open editor"), L("Show in Finder"), L("Copy to clipboard"), L("Save + copy to clipboard")])
         recordingOnStopPopup.target = self
         recordingOnStopPopup.action = #selector(recordingOnStopChanged(_:))
         stack.addArrangedSubview(labeledRow(L("When done:"), controls: [recordingOnStopPopup]))
@@ -2744,6 +2744,7 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
         switch onStop {
         case "finder": recordingOnStopPopup.selectItem(at: 1)
         case "clipboard": recordingOnStopPopup.selectItem(at: 2)
+        case "save": recordingOnStopPopup.selectItem(at: 3)
         default: recordingOnStopPopup.selectItem(at: 0)
         }
 
@@ -2952,7 +2953,7 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
     }
 
     @objc private func recordingOnStopChanged(_ sender: NSPopUpButton) {
-        let values = ["editor", "finder", "clipboard"]
+        let values = ["editor", "finder", "clipboard", "save"]
         UserDefaults.standard.set(values[sender.indexOfSelectedItem], forKey: "recordingOnStop")
     }
     @objc private func hideRecordingHUDChanged(_ sender: NSButton) {
@@ -3221,7 +3222,10 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
         let template = raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? FilenameFormatter.defaultRecordingTemplate : raw
         let sampleDate = sampleFilenameDate()
         let sampleIndex = template.contains("{index}") ? 1 : nil
-        let base = FilenameFormatter.format(template: template, windowTitle: nil, index: sampleIndex, date: sampleDate, fallback: FilenameFormatter.defaultRecordingTemplate)
+        let base = FilenameFormatter.formatRelativePath(
+            template: template, appName: "Safari", index: sampleIndex, date: sampleDate,
+            fallback: FilenameFormatter.defaultRecordingTemplate
+        ).joined(separator: "/")
         preview.stringValue = "\(L("Preview:")) \(base).mp4"
     }
 
