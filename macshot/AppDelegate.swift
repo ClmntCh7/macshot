@@ -315,7 +315,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         // something references ScreenshotHistory.shared.
         _ = ScreenshotHistory.shared
 
-        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: nil)
+        updaterController = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
         // Disable silent update downloads — updates should only apply
         // via explicit user action ("Check for Updates..." / Install),
         // so an automatic update can't be mistaken for a silent crash.
